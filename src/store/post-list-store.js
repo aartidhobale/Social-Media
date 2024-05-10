@@ -1,59 +1,55 @@
 // post-list-store.js
 
-import { type } from "@testing-library/user-event/dist/type";
-import { createContext, useReducer } from "react";
-
-const DEFAULT_POST_LIST = [
-  {
-    id: "1",
-    title: "Going to Mumbai",
-    body: "Hi Friends, I am going to Mumbai for my vacations. Hope to enjoy a lot. Pease out.",
-    reactions: 2,
-    userId: "user-9",
-    tags: ["vacations","Mumbai","Enjoying"],
-  },
-  {
-    id: "2",
-    title: "After Engineering Completed",
-    body: "Hard to believe.",
-    reactions: 15,
-    userId: "user-12",
-    tags: ["Graduating","Unbelievable","Enjoying"],
-  },
-];
+import React, { createContext, useReducer } from "react";
 
 export const PostListContext = createContext({
-  postList: DEFAULT_POST_LIST,
+  postList: [],
   addPost: () => {},
+  addInitialPosts: () => {},
   deletePost: () => {},
-
 });
 
-const postListProvider = (currPostList, action) => {
+const postListReducer = (currPostList, action) => {
   let newPostList = [...currPostList]; // Create a new array instead of mutating the current one
-  if (action.type === 'DELETE_POST') {
-    newPostList = currPostList.filter(post => post.id !== action.payload.postId);
-  } else if (action.type === 'ADD_POST') {
-    newPostList  = [action.payload, ...currPostList]
+  if (action.type === "DELETE_POST") {
+    newPostList = currPostList.filter(
+      (post) => post.id !== action.payload.postId
+    );
+  } else if (action.type === "ADD_INITIAL_POSTS") {
+    newPostList = action.payload.posts;
+  } else if (action.type === "ADD_POST") {
+    newPostList = [{ ...action.payload }, ...currPostList]; // Spread the payload to avoid mutation
   }
   return newPostList;
 };
 
 const PostListProvider = ({ children }) => {
-  const [postList, dispatchPostList] = useReducer(postListProvider, DEFAULT_POST_LIST);
+  const [postList, dispatchPostList] = useReducer(
+    postListReducer,
+    []
+  );
 
   const addPost = (userId, postTitle, postBody, reactions, tags) => {
     dispatchPostList({
-        type: 'ADD_POST',
-        payload: {
-            id: Date.now(),
-             title: postTitle,
-              body: postBody,
-               reactions: reactions,
-                userId: userId,
-                 tags: tags,
-        }
-    })
+      type: "ADD_POST",
+      payload: {
+        id: Date.now(),
+        title: postTitle,
+        body: postBody,
+        reactions: reactions,
+        userId: userId,
+        tags: tags,
+      },
+    });
+  };
+
+  const addInitialPosts = (posts) => {
+    dispatchPostList({
+      type: "ADD_INITIAL_POSTS",
+      payload: {
+        posts,
+      },
+    });
   };
 
   const deletePost = (postId) => {
@@ -66,7 +62,9 @@ const PostListProvider = ({ children }) => {
   };
 
   return (
-    <PostListContext.Provider value={{ postList, addPost, deletePost }}>
+    <PostListContext.Provider
+      value={{ postList, addPost, addInitialPosts, deletePost }}
+    >
       {children}
     </PostListContext.Provider>
   );
